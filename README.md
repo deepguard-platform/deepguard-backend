@@ -1,11 +1,15 @@
-   # DeepGuard Backend
+## Local setup
+```bash
+python -m venv .venv
+source .venv/Scripts/activate   # Windows (Git Bash). On Linux/Mac: source .venv/bin/activate
+pip install -r requirements-dev.txt
+pre-commit install
+```
 
-   Backend orchestration platform for DeepGuard: API gateway, async job pipeline,
-   ensemble engine and job management for multi-modal deepfake detection.
-
-   ## Team workflow
-   - `main` is protected. No direct pushes.
-   - Branch names: `<type>/<task-id>-<short-name>` (feat, fix, docs, chore, test)
-   - Commit messages: `<type>: <what changed>`
-   - Every change goes through a Pull Request with 1 approval, merged with Squash.
-   - Never commit secrets or `.env` files.
+## Useful commands
+```bash
+ruff check .            # lint
+ruff format .           # format code
+pytest                  # run tests
+pre-commit run --all-files
+```
