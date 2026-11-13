@@ -1,11 +1,23 @@
+from contextlib import asynccontextmanager
+
 import redis
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 
+from app.api.jobs import router as jobs_router
 from app.core.config import settings
+from app.db.init_db import init_db
 from app.db.session import engine
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
+app.include_router(jobs_router)
 
 
 @app.get("/health", tags=["health"])
