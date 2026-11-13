@@ -1,13 +1,17 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import redis
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.api.jobs import router as jobs_router
 from app.core.config import settings
 from app.db.init_db import init_db
 from app.db.session import engine
+
+STATIC_DIR = Path(__file__).parent / "static"
 
 
 @asynccontextmanager
@@ -44,3 +48,7 @@ def ready() -> dict:
     if "error" in checks.values():
         raise HTTPException(status_code=503, detail=checks)
     return {"status": "ready", **checks}
+
+
+# Keep this last: it serves the web page at "/" without hiding the API routes above.
+app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
