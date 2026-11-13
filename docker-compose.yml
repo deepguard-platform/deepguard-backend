@@ -1,3 +1,13 @@
+x-model-stub: &model-stub
+  build:
+    context: .
+    dockerfile: model_stubs/Dockerfile
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
 services:
   db:
     image: postgres:16-alpine
@@ -25,17 +35,50 @@ services:
       timeout: 3s
       retries: 10
 
+  video-model-a:
+    <<: *model-stub
+    environment:
+      MODALITY: video
+      MODEL_NAME: video-model-a
+
+  video-model-b:
+    <<: *model-stub
+    environment:
+      MODALITY: video
+      MODEL_NAME: video-model-b
+
+  audio-model-a:
+    <<: *model-stub
+    environment:
+      MODALITY: audio
+      MODEL_NAME: audio-model-a
+
+  text-model-a:
+    <<: *model-stub
+    environment:
+      MODALITY: text
+      MODEL_NAME: text-model-a
+
   api:
     build: .
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
+      MODEL_URL_MODE: docker
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      video-model-a:
+        condition: service_healthy
+      video-model-b:
+        condition: service_healthy
+      audio-model-a:
+        condition: service_healthy
+      text-model-a:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
