@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeepGuard Demo</title>
+<style>
+  :root {
+    --navy: #0B2545; --ink: #10213B; --teal: #0E8A94; --coral: #F25C54;
+    --steel: #3B6EA5; --slate: #5B7C99; --tint: #EEF3F8; --grid: #D5DFEA; --ice: #9CC5D8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Calibri, Arial, sans-serif; background: var(--tint); color: var(--ink); }
+  header { background: var(--navy); color: #fff; padding: 18px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  header h1 { margin: 0; font-size: 24px; letter-spacing: .5px; }
+  header p { margin: 2px 0 0; color: var(--ice); font-size: 14px; }
+  .badge { background: var(--coral); color: #fff; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: .5px; white-space: nowrap; }
+  main { max-width: 960px; margin: 22px auto 40px; padding: 0 16px; display: grid; gap: 16px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px 22px; box-shadow: 0 1px 3px rgba(11, 37, 69, .1); }
+  h2 { margin: 0 0 14px; font-size: 18px; color: var(--navy); }
+  .hint { color: var(--slate); font-size: 13px; margin: 10px 0 0; }
+  #dropzone { border: 2px dashed var(--slate); border-radius: 12px; background: var(--tint); padding: 28px 16px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s; }
+  #dropzone.over { background: #dff3f4; border-color: var(--teal); }
+  #dropzone strong { color: var(--navy); font-size: 16px; }
+  #dropzone span { display: block; margin-top: 6px; color: var(--slate); font-size: 13px; }
+  ul#files { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+  ul#files li { display: flex; align-items: center; gap: 12px; background: var(--tint); border-radius: 8px; padding: 8px 12px; }
+  .name { flex: 1; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .size { color: var(--slate); font-size: 12px; }
+  .tag { font-size: 11px; font-weight: 700; color: #fff; border-radius: 999px; padding: 3px 10px; text-transform: uppercase; }
+  .tag.video { background: var(--steel); } .tag.audio { background: var(--teal); } .tag.text { background: var(--slate); } .tag.unknown { background: var(--coral); }
+  .x { border: 0; background: transparent; color: var(--slate); font-size: 18px; cursor: pointer; line-height: 1; }
+  .actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+  button.primary { background: var(--teal); color: #fff; border: 0; border-radius: 8px; padding: 11px 24px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  button.primary:disabled { background: var(--ice); cursor: not-allowed; }
+  button.secondary { background: #fff; color: var(--navy); border: 1.5px solid var(--navy); border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .steps { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .step { padding: 6px 16px; border-radius: 999px; background: var(--tint); color: var(--slate); font-size: 13px; font-weight: 700; }
+  .step.active { background: var(--steel); color: #fff; }
+  .step.done { background: var(--teal); color: #fff; }
+  .step.failed { background: var(--coral); color: #fff; }
+  .bar { height: 14px; background: var(--tint); border-radius: 999px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: var(--teal); transition: width .4s ease; }
+  .meta { color: var(--slate); font-size: 13px; margin-top: 10px; word-break: break-all; }
+  .error { background: #fdecea; color: #9b1c15; border-radius: 8px; padding: 12px 14px; font-size: 14px; margin-top: 14px; }
+  .verdict { border-radius: 12px; padding: 20px 24px; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .verdict.fake { background: var(--coral); } .verdict.real { background: var(--teal); }
+  .verdict .label { font-size: 13px; letter-spacing: 1px; opacity: .9; }
+  .verdict .big { font-size: 44px; font-weight: 800; line-height: 1.1; font-family: Cambria, Georgia, serif; }
+  .verdict .conf { text-align: right; } .verdict .conf .big { font-size: 38px; }
+  .verdict .sub { font-size: 13px; opacity: .95; margin-top: 4px; }
+  h3 { margin: 22px 0 10px; font-size: 15px; color: var(--navy); }
+  .model { display: grid; grid-template-columns: 170px 1fr 70px; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--grid); }
+  .model:last-child { border-bottom: 0; }
+  .model .who { font-size: 14px; font-weight: 600; } .model .who small { display: block; color: var(--slate); font-weight: 400; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .score-track { height: 12px; background: var(--tint); border-radius: 999px; position: relative; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 999px; }
+  .score-fill.fake { background: var(--coral); } .score-fill.real { background: var(--teal); }
+  .model .val { text-align: right; font-size: 13px; font-weight: 700; }
+  .model .val.fake { color: var(--coral); } .model .val.real { color: var(--teal); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: var(--navy); color: #fff; text-align: left; padding: 8px 12px; font-size: 13px; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--grid); }
+  td.fake { color: var(--coral); font-weight: 700; } td.real { color: var(--teal); font-weight: 700; }
+  .default { font-size: 11px; background: var(--tint); color: var(--slate); border-radius: 999px; padding: 2px 8px; margin-left: 6px; }
+  .note { margin-top: 16px; background: var(--tint); color: var(--slate); border-radius: 8px; padding: 10px 14px; font-size: 13px; }
+  .hidden { display: none; }
+  @media (max-width: 640px) { .model { grid-template-columns: 1fr; } .model .val { text-align: left; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>DeepGuard</h1>
+    <p>Multi-modal deepfake detection: backend orchestration demo</p>
+  </div>
+  <span class="badge">DEMO MODE</span>
+</header>
+
+<main>
+  <section class="card" id="upload-card">
+    <h2>1. Upload files</h2>
+    <div id="dropzone" tabindex="0">
+      <strong>Drag and drop video, audio or text files here</strong>
+      <span>or click to choose files</span>
+    </div>
+    <input id="file-input" type="file" multiple hidden>
+    <ul id="files"></ul>
+    <p class="hint">Video: mp4, webm, mov. Audio: wav, mp3. Text: txt. Up to 50 MB per file. Tip: a file name containing "fake" or "real" gives a predictable demo result.</p>
+    <div class="actions">
+      <button class="primary" id="analyze" disabled>Analyze</button>
+      <button class="secondary" id="clear" disabled>Clear</button>
+    </div>
+    <div class="error hidden" id="error"></div>
+  </section>
+
+  <section class="card hidden" id="progress-card">
+    <h2>2. Processing</h2>
+    <div class="steps">
+      <span class="step" id="step-queued">Queued</span>
+      <span class="step" id="step-processing">Processing</span>
+      <span class="step" id="step-done">Done</span>
+    </div>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="meta" id="meta"></div>
+  </section>
+
+  <section class="card hidden" id="result-card">
+    <h2>3. Result</h2>
+    <div class="verdict" id="verdict"></div>
+    <h3>Model results</h3>
+    <div id="models"></div>
+    <h3>Ensemble strategies</h3>
+    <table>
+      <thead><tr><th>Strategy</th><th>Verdict</th><th>Confidence</th></tr></thead>
+      <tbody id="strategies"></tbody>
+    </table>
+    <div class="note">Demo mode: model scores are simulated. Upload, routing, jobs, database and ensemble are real.</div>
+    <div class="actions"><button class="secondary" id="again">Analyze new files</button></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var API = '/api/v1/jobs';
+  var MODALITY = { mp4: 'video', webm: 'video', mov: 'video', avi: 'video', mkv: 'video',
+                   wav: 'audio', mp3: 'audio', ogg: 'audio', flac: 'audio', m4a: 'audio', txt: 'text' };
+  var selected = [];
+  var busy = false;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function ext(name) { var i = name.lastIndexOf('.'); return i < 0 ? '' : name.slice(i + 1).toLowerCase(); }
+  function modalityOf(name) { return MODALITY[ext(name)] || 'unknown'; }
+  function fmtSize(b) { return b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB'; }
+  function pretty(s) { return String(s).replace(/_/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); }); }
+  function pct(x) { return Math.round(x * 100) + '%'; }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function show(id, on) { $(id).classList.toggle('hidden', !on); }
+
+  function showError(msg) { var e = $('error'); e.textContent = msg; e.classList.remove('hidden'); }
+  function clearError() { $('error').classList.add('hidden'); }
+
+  function renderFiles() {
+    var ul = $('files');
+    ul.innerHTML = '';
+    selected.forEach(function (f, i) {
+      var li = el('li');
+      li.appendChild(el('span', 'tag ' + modalityOf(f.name), modalityOf(f.name)));
+      li.appendChild(el('span', 'name', f.name));
+      li.appendChild(el('span', 'size', fmtSize(f.size)));
+      var x = el('button', 'x', '\u00d7');
+      x.title = 'Remove';
+      x.addEventListener('click', function () { if (!busy) { selected.splice(i, 1); renderFiles(); } });
+      li.appendChild(x);
+      ul.appendChild(li);
+    });
+    $('analyze').disabled = busy || selected.length === 0;
+    $('clear').disabled = busy || selected.length === 0;
+  }
+
+  function addFiles(list) {
+    Array.prototype.forEach.call(list, function (f) {
+      var dup = selected.some(function (s) { return s.name === f.name && s.size === f.size && s.lastModified === f.lastModified; });
+      if (!dup) selected.push(f);
+    });
+    clearError();
+    renderFiles();
+  }
+
+  function setStatus(status, progress) {
+    ['queued', 'processing', 'done'].forEach(function (k) { $('step-' + k).className = 'step'; });
+    if (status === 'queued') { $('step-queued').className = 'step active'; }
+    else if (status === 'processing') { $('step-queued').className = 'step done'; $('step-processing').className = 'step active'; }
+    else if (status === 'done') { ['queued', 'processing', 'done'].forEach(function (k) { $('step-' + k).className = 'step done'; }); }
+    else if (status === 'failed') { $('step-queued').className = 'step done'; $('step-processing').className = 'step done'; $('step-done').className = 'step failed'; $('step-done').textContent = 'Failed'; }
+    $('bar').style.width = (progress || 0) + '%';
+  }
+
+  async function readDetail(res) {
+    try {
+      var d = await res.json();
+      if (d && d.detail) return typeof d.detail === 'string' ? d.detail : JSON.stringify(d.detail);
+    } catch (e) { /* ignore */ }
+    return 'Request failed (' + res.status + ')';
+  }
+
+  function renderResult(result, seconds) {
+    var e = result.ensemble;
+    var v = $('verdict');
+    v.innerHTML = '';
+    v.className = 'verdict';
+    if (!e) {
+      v.classList.add('real');
+      var box = el('div');
+      box.appendChild(el('div', 'label', 'NO RESULT'));
+      box.appendChild(el('div', 'sub', result.error || 'No model returned a result.'));
+      v.appendChild(box);
+    } else {
+      v.classList.add(e.verdict);
+      var left = el('div');
+      left.appendChild(el('div', 'label', 'ENSEMBLE VERDICT'));
+      left.appendChild(el('div', 'big', e.verdict.toUpperCase()));
+      left.appendChild(el('div', 'sub', 'Combined from ' + result.model_results.length + ' model result(s) using ' + pretty(e.default_strategy).toLowerCase() + ' \u2022 ' + seconds.toFixed(1) + ' s'));
+      var right = el('div', 'conf');
+      right.appendChild(el('div', 'label', 'CONFIDENCE'));
+      right.appendChild(el('div', 'big', pct(e.confidence)));
+      v.appendChild(left);
+      v.appendChild(right);
+    }
+
+    var models = $('models');
+    models.innerHTML = '';
+    result.model_results.forEach(function (m) {
+      var row = el('div', 'model');
+      var who = el('div', 'who', m.model_name);
+      who.appendChild(el('small', '', m.filename + ' \u2022 weight ' + m.weight));
+      var track = el('div', 'score-track');
+      var fill = el('div', 'score-fill ' + m.label);
+      fill.style.width = Math.max(2, m.score * 100) + '%';
+      track.appendChild(fill);
+      row.appendChild(who);
+      row.appendChild(track);
+      row.appendChild(el('div', 'val ' + m.label, m.label.toUpperCase() + ' ' + m.score.toFixed(2)));
+      models.appendChild(row);
+    });
+
+    var tbody = $('strategies');
+    tbody.innerHTML = '';
+    if (e) {
+      Object.keys(e.strategies).forEach(function (k) {
+        var s = e.strategies[k];
+        var tr = el('tr');
+        var name = el('td', '', pretty(k));
+        if (k === e.default_strategy) name.appendChild(el('span', 'default', 'used for verdict'));
+        tr.appendChild(name);
+        tr.appendChild(el('td', s.label, s.label.toUpperCase()));
+        tr.appendChild(el('td', '', pct(s.confidence)));
+        tbody.appendChild(tr);
+      });
+    }
+    show('result-card', true);
+    $('result-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function analyze() {
+    if (busy || selected.length === 0) return;
+    busy = true;
+    renderFiles();
+    clearError();
+    show('result-card', false);
+    show('progress-card', true);
+    $('step-done').textContent = 'Done';
+    setStatus('queued', 0);
+    $('meta').textContent = 'Uploading...';
+    var started = performance.now();
+    try {
+      var fd = new FormData();
+      selected.forEach(function (f) { fd.append('files', f, f.name); });
+      var res = await fetch(API, { method: 'POST', body: fd });
+      if (!res.ok) throw new Error(await readDetail(res));
+      var job = await res.json();
+      $('meta').textContent = 'Job ' + job.job_id;
+      var state = null;
+      for (var i = 0; i < 180; i++) {
+        var r = await fetch(API + '/' + job.job_id);
+        if (!r.ok) throw new Error(await readDetail(r));
+        state = await r.json();
+        setStatus(state.status, state.progress);
+        $('meta').textContent = 'Job ' + job.job_id + ' \u2022 ' + state.status + ' \u2022 ' + state.progress + '%';
+        if (state.status === 'done' || state.status === 'failed') break;
+        await sleep(1000);
+      }
+      if (!state || (state.status !== 'done' && state.status !== 'failed')) throw new Error('Timed out waiting for the job.');
+      var rr = await fetch(API + '/' + job.job_id + '/result');
+      if (!rr.ok) throw new Error(await readDetail(rr));
+      var result = await rr.json();
+      if (result.status === 'failed') showError('Job failed: ' + (result.error || 'unknown error'));
+      renderResult(result, (performance.now() - started) / 1000);
+    } catch (err) {
+      show('progress-card', false);
+      showError(err && err.message === 'Failed to fetch' ? 'Cannot reach the server. Is it running?' : (err.message || String(err)));
+    } finally {
+      busy = false;
+      renderFiles();
+    }
+  }
+
+  function reset() {
+    selected = [];
+    renderFiles();
+    show('progress-card', false);
+    show('result-card', false);
+    clearError();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  var dz = $('dropzone'), input = $('file-input');
+  dz.addEventListener('click', function () { input.click(); });
+  dz.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); input.click(); } });
+  dz.addEventListener('dragover', function (ev) { ev.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', function () { dz.classList.remove('over'); });
+  dz.addEventListener('drop', function (ev) { ev.preventDefault(); dz.classList.remove('over'); addFiles(ev.dataTransfer.files); });
+  input.addEventListener('change', function () { addFiles(input.files); input.value = ''; });
+  $('analyze').addEventListener('click', analyze);
+  $('clear').addEventListener('click', function () { if (!busy) { selected = []; renderFiles(); clearError(); } });
+  $('again').addEventListener('click', reset);
+  renderFiles();
+})();
+</script>
+</body>
+</html>
