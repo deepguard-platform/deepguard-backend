@@ -118,6 +118,15 @@
     <div class="note">Demo mode: model scores are simulated. Upload, routing, jobs, database and ensemble are real.</div>
     <div class="actions"><button class="secondary" id="again">Analyze new files</button></div>
   </section>
+
+    <section class="card" id="history-card">
+    <h2>Recent jobs (from the database)</h2>
+    <table>
+      <thead><tr><th>Files</th><th>Status</th><th>Verdict</th><th>Confidence</th></tr></thead>
+      <tbody id="history"></tbody>
+    </table>
+    <p class="hint hidden" id="history-empty">No jobs yet.</p>
+  </section>
 </main>
 
 <script>
@@ -283,7 +292,26 @@
     } finally {
       busy = false;
       renderFiles();
+      loadHistory();
     }
+  }
+  async function loadHistory() {
+    try {
+      var res = await fetch(API + '?limit=8');
+      if (!res.ok) return;
+      var jobs = await res.json();
+      var tbody = $('history');
+      tbody.innerHTML = '';
+      jobs.forEach(function (j) {
+        var tr = el('tr');
+        tr.appendChild(el('td', '', j.files.join(', ')));
+        tr.appendChild(el('td', '', j.status));
+        tr.appendChild(el('td', j.verdict || '', j.verdict ? j.verdict.toUpperCase() : '-'));
+        tr.appendChild(el('td', '', j.confidence === null || j.confidence === undefined ? '-' : pct(j.confidence)));
+        tbody.appendChild(tr);
+      });
+      $('history-empty').classList.toggle('hidden', jobs.length > 0);
+    } catch (e) { /* ignore */ }
   }
 
   function reset() {
@@ -306,6 +334,7 @@
   $('clear').addEventListener('click', function () { if (!busy) { selected = []; renderFiles(); clearError(); } });
   $('again').addEventListener('click', reset);
   renderFiles();
+  loadHistory();
 })();
 </script>
 </body>

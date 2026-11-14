@@ -51,6 +51,22 @@ async def create_job(
     return {"job_id": job.id, "status": job.status}
 
 
+@router.get("")
+def list_jobs(db: Annotated[Session, Depends(get_db)], limit: int = 10) -> list[dict]:
+    jobs = db.scalars(select(Job).order_by(Job.created_at.desc()).limit(min(limit, 50))).all()
+    return [
+        {
+            "job_id": job.id,
+            "status": job.status,
+            "files": [f["filename"] for f in job.files],
+            "verdict": (job.ensemble or {}).get("verdict"),
+            "confidence": (job.ensemble or {}).get("confidence"),
+            "created_at": job.created_at.isoformat(),
+        }
+        for job in jobs
+    ]
+
+
 @router.get("/{job_id}")
 def get_job(job_id: str, db: Annotated[Session, Depends(get_db)]) -> dict:
     job = db.get(Job, job_id)
