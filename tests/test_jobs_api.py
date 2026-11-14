@@ -9,3 +9,9 @@ def test_unsupported_file_type_is_rejected(client):
         files=[("files", ("notes.pdf", b"%PDF-1.4", "application/pdf"))],
     )
     assert response.status_code == 400
+
+
+def test_list_jobs_returns_a_list(client):
+    response = client.get("/api/v1/jobs")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
