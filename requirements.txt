@@ -9,14 +9,3 @@ requests==2.34.2
 SQLAlchemy==2.1.8
 uvicorn==0.54.0
 httpx2
-
-
-
-## Demo
-```bash
-cp .env.example .env        # set a password in .env (letters and numbers only)
-docker compose up --build
-```
-Open http://localhost:8000 and upload files from `demo_samples/`. A file name containing `fake` or `real` gives a predictable result. Model scores are simulated; upload, routing, jobs, database and ensemble are real.
-
-Without Docker: run `python scripts/run_stubs_local.py` in one terminal and `uvicorn app.main:app --reload` in another.

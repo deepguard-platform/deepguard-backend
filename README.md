@@ -25,3 +25,12 @@ docker compose up --build
 - Readiness (checks PostgreSQL and Redis): http://localhost:8000/health/ready
 
 Stop with `docker compose down` (add `-v` only if you want to delete the database data).
+
+## Demo
+```bash
+cp .env.example .env        # set a password in .env (letters and numbers only)
+docker compose up --build
+```
+Open http://localhost:8000 and upload files from `demo_samples/`. A file name containing `fake` or `real` gives a predictable result. Model scores are simulated; upload, routing, jobs, database and ensemble are real.
+
+Without Docker: run `python scripts/run_stubs_local.py` in one terminal and `uvicorn app.main:app --reload` in another.
